@@ -1047,7 +1047,7 @@ void setup() {
   //bot.longPoll = 60;
   bot.longPoll = 5;
 
-  client.setInsecure();
+  client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
   setupinterrupts();
 
