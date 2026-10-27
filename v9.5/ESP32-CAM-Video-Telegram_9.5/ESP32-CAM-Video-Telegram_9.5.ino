@@ -355,12 +355,12 @@ void handleNewMessages(int numNewMessages) {
   //Serial.println(String(numNewMessages));
 
   for (int i = 0; i < numNewMessages; i++) {
-    
-    // This line gets id of the person who sent the message .. it could be any telegram user
-    // remove this line, and all messages get send to you
-    
-    // chat_id = String(bot.messages[i].chat_id);
-    
+    // only accept commands from the configured owner chat_id
+    if (chat_id.length() == 0 || (bot.messages[i].chat_id != chat_id && bot.messages[i].from_id != chat_id)) {
+      Serial.printf("\nIgnoring message from unauthorized chat %s\n", bot.messages[i].chat_id.c_str());
+      continue;
+    }
+
     String text = bot.messages[i].text;
     Serial.printf("\nGot a message %s\n", text);
 

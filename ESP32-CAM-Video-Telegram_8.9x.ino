@@ -132,9 +132,9 @@ char password[] = "yourssidpassword"; // your network key
 // https://sites.google.com/a/usapiens.com/opnode/time-zones  -- find your timezone here
 String TIMEZONE = "GMT0BST,M3.5.0/01,M10.5.0/02";
 
-// you can enter your home chat_id, so the device can send you a reboot message, otherwise it responds to the chat_id talking to telegram
+// enter your home chat_id; the device only accepts commands from this chat_id and sends everything to it
 
-String chat_id = "1234567890";
+const String chat_id = "1234567890";
 #define BOTtoken "XXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"  // your Bot Token (Get from Botfather)
 
 // see here for information about getting free telegram credentials
@@ -299,7 +299,11 @@ void handleNewMessages(int numNewMessages) {
   //Serial.println(String(numNewMessages));
 
   for (int i = 0; i < numNewMessages; i++) {
-    chat_id = String(bot.messages[i].chat_id);
+    // only accept commands from the configured owner chat_id
+    if (chat_id.length() == 0 || (bot.messages[i].chat_id != chat_id && bot.messages[i].from_id != chat_id)) {
+      Serial.printf("\nIgnoring message from unauthorized chat %s\n", bot.messages[i].chat_id.c_str());
+      continue;
+    }
     String text = bot.messages[i].text;
 
     Serial.printf("\nGot a message %s\n", text);
