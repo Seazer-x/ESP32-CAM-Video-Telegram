@@ -27,6 +27,10 @@ static esp_err_t edit_handler(httpd_req_t *req) {
 
 
   buf_len = httpd_req_get_url_query_len(req) + 1;
+  if (buf_len > sizeof(buf)) {
+    httpd_resp_send_err(req, HTTPD_414_URI_TOO_LONG, "Query too long");
+    return ESP_FAIL;
+  }
   if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
     Serial.printf("Query => %s\n", buf);
     char param[32];
@@ -73,6 +77,10 @@ static esp_err_t time_handler(httpd_req_t *req) {
 
 
   buf_len = httpd_req_get_url_query_len(req) + 1;
+  if (buf_len > sizeof(buf)) {
+    httpd_resp_send_err(req, HTTPD_414_URI_TOO_LONG, "Query too long");
+    return ESP_FAIL;
+  }
   if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
     Serial.printf("Time => %s\n", buf);
     char param[32];
@@ -120,6 +128,10 @@ static esp_err_t find_handler(httpd_req_t *req) {
   Serial.print(", priority = "); Serial.println(uxTaskPriorityGet(NULL));
 
   buf_len = httpd_req_get_url_query_len(req) + 1;
+  if (buf_len > sizeof(buf)) {
+    httpd_resp_send_err(req, HTTPD_414_URI_TOO_LONG, "Query too long");
+    return ESP_FAIL;
+  }
   if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
     //Serial.printf("Query => %s\n", buf);
     char param[32];
@@ -256,6 +268,25 @@ static esp_err_t capture_handler(httpd_req_t *req) {
   return res;;
 }
 
+static int recv_body(httpd_req_t *req, char *buf, size_t buf_size) {
+  if (req->content_len >= buf_size) {
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Request body too large");
+    return -1;
+  }
+  size_t received = 0;
+  while (received < req->content_len) {
+    int ret = httpd_req_recv(req, buf + received, req->content_len - received);
+    if (ret == HTTPD_SOCK_ERR_TIMEOUT) continue;
+    if (ret <= 0) {
+      httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request body");
+      return -1;
+    }
+    received += ret;
+  }
+  buf[received] = '\0';
+  return received;
+}
+
 static esp_err_t update_handler(httpd_req_t *req) {
   size_t buf_len;
 
@@ -268,8 +299,8 @@ static esp_err_t update_handler(httpd_req_t *req) {
 
   buf_len = httpd_req_get_url_query_len(req) + 1;
   Serial.printf("buf_len %d\n", buf_len);
-  ret = httpd_req_recv(req, buf, remaining + 1 );
-  //ret = ret + 1;
+  ret = recv_body(req, buf, sizeof(buf));
+  if (ret < 0) return ESP_FAIL;
   Serial.printf("ret %d remaining %d \n", ret, remaining);
   Serial.printf("recv => %.*s\n", ret, buf);
 
@@ -468,8 +499,8 @@ static esp_err_t config_handler(httpd_req_t *req) {
 
   buf_len = httpd_req_get_url_query_len(req) + 1;
   Serial.printf("buf_len %d\n", buf_len);
-  ret = httpd_req_recv(req, buf, remaining + 1 );
-  ret = ret + 1;
+  ret = recv_body(req, buf, sizeof(buf));
+  if (ret < 0) return ESP_FAIL;
   Serial.printf("ret %d remaining %d \n", ret, remaining);
   Serial.printf("recv => %.*s\n", ret, buf);
   //if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
@@ -726,6 +757,10 @@ static esp_err_t radu_handler(httpd_req_t *req) {
   Serial.print(", priority = "); Serial.println(uxTaskPriorityGet(NULL));
 
   buf_len = httpd_req_get_url_query_len(req) + 1;
+  if (buf_len > sizeof(buf)) {
+    httpd_resp_send_err(req, HTTPD_414_URI_TOO_LONG, "Query too long");
+    return ESP_FAIL;
+  }
   if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
     //Serial.printf("Query => %s\n", buf);
     char param[32];
